@@ -1,65 +1,129 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+
+export default function HomePage() {
+  const { data: session } = useSession();
+  const router = useRouter();
+
+  if (session) {
+    router.push("/dashboard");
+    return null;
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-blue-950 dark:to-indigo-950">
+      <nav className="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-900/80">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+          <h1 className="text-xl font-bold tracking-tight">
+            <span className="text-primary">Enhanced Dynamic</span>{" "}
+            <span className="text-muted-foreground">MBTI</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+          <div className="flex gap-2">
+            <Link href="/auth/login">
+              <Button variant="ghost" size="sm">登录</Button>
+            </Link>
+            <Link href="/auth/register">
+              <Button size="sm">注册</Button>
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+      </nav>
+
+      <main className="max-w-6xl mx-auto px-4 py-20">
+        <div className="text-center space-y-8">
+          <div className="space-y-4">
+            <h2 className="text-5xl sm:text-6xl font-bold tracking-tight">
+              你的性格，<br />
+              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                不止四个字母
+              </span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              传统 MBTI 给你一个静态标签。Enhanced Dynamic MBTI 通过 14-21 天的动态测量，
+              在三维空间中描绘你真实的性格边界 —— 因为你每天都不一样。
+            </p>
+          </div>
+
+          <div className="flex gap-4 justify-center">
+            <Link href="/auth/register">
+              <Button size="lg" className="text-lg px-8">
+                开始探索
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20 text-left">
+            <FeatureCard
+              title="每日 3-5 分钟"
+              description="每天回答 15 道精心设计的问题，系统会捕捉你当天的性格状态。简单、快速、不打扰你的生活。"
+              icon={
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              }
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <FeatureCard
+              title="三维性格空间"
+              description="用 N-S、T-F、J-P 三个维度构建三维坐标系，每天的测量结果是空间中的一个点，形成你独特的性格点云。"
+              icon={
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+                </svg>
+              }
+            />
+            <FeatureCard
+              title="动态边界模型"
+              description="通过凸包和置信椭球算法，计算你的性格边界。了解你性格的稳定区域、波动范围和变化趋势。"
+              icon={
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5" />
+                </svg>
+              }
+            />
+          </div>
+
+          <div className="mt-16 p-8 bg-white/60 dark:bg-slate-800/60 rounded-2xl border max-w-3xl mx-auto">
+            <h3 className="text-2xl font-bold mb-4">为什么需要动态测量？</h3>
+            <div className="text-muted-foreground space-y-3 text-left">
+              <p>
+                你今天可能因为一场激烈的讨论而更偏向 T（思考型），明天可能因为和朋友的深入交流而更偏向 F（情感型）。
+                你的性格不是一个固定的点，而是一个在三维空间中的<strong className="text-foreground">活动范围</strong>。
+              </p>
+              <p>
+                Enhanced Dynamic MBTI 通过持续的测量，找到这个范围的边界，告诉你：
+              </p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>你性格的「重心」在哪里</li>
+                <li>你的波动范围有多大</li>
+                <li>哪些维度稳定，哪些维度灵活</li>
+                <li>你的性格是否有变化趋势</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+function FeatureCard({
+  title,
+  description,
+  icon,
+}: {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div className="p-6 bg-white/60 dark:bg-slate-800/60 rounded-xl border space-y-3">
+      <div className="text-primary">{icon}</div>
+      <h3 className="text-lg font-semibold">{title}</h3>
+      <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
     </div>
   );
 }

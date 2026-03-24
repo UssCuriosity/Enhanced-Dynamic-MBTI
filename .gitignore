@@ -41,3 +41,13 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# database
+*.db
+*.db-journal
+
+# cursor IDE
+.cursor/
+
+# user data (contains personal info)
+/LoginRegistration/

@@ -1,5 +1,5 @@
 {
-  "name": "enhanced-mbti",
+  "name": "enhanced-dynamic-mbti",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
+    "@libsql/client": "^0.17.2",
+    "@prisma/adapter-libsql": "^7.5.0",
     "@prisma/client": "^7.5.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
