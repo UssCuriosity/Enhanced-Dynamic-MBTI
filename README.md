@@ -29,17 +29,141 @@
 - 每日的三维坐标评分
 - 性格边界模型数据（凸包、置信椭球、质心、统计分析）
 
-## 快速开始
+## 快速开始（macOS）
+
+从零开始，在一台全新的 Mac 上把项目跑起来。
+
+### 1. 安装 Homebrew（macOS 包管理器）
+
+打开 **终端**（Terminal.app，在「启动台 → 其他」或按 `Cmd + 空格` 搜索 "终端"），粘贴以下命令：
 
 ```bash
-# 安装依赖
-npm install
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
 
-# 启动开发服务器
+安装完成后，终端会提示你执行几行命令来把 Homebrew 加入环境变量（通常是两行 `echo` 和 `eval` 命令），**按提示复制粘贴执行即可**。
+
+验证安装：
+
+```bash
+brew --version
+```
+
+能看到版本号说明安装成功。
+
+### 2. 安装 Node.js
+
+本项目使用 Next.js 16，需要 **Node.js >= 18.18.0**。推荐安装最新 LTS 版本：
+
+```bash
+brew install node
+```
+
+验证安装：
+
+```bash
+node --version   # 应输出 v18.x 或更高
+npm --version    # 应输出 9.x 或更高
+```
+
+### 3. 安装 Git 并下载代码
+
+macOS 通常自带 Git，如果没有：
+
+```bash
+brew install git
+```
+
+克隆项目：
+
+```bash
+git clone https://github.com/UssCuriosity/Enhanced-Dynamic-MBTI.git
+cd Enhanced-Dynamic-MBTI
+```
+
+> 也可以在 [GitHub 仓库页面](https://github.com/UssCuriosity/Enhanced-Dynamic-MBTI) 点击绿色的 **Code** 按钮，选择 **Download ZIP** 下载压缩包，解压后在终端中 `cd` 到项目文件夹即可。
+
+### 4. 创建环境变量文件
+
+项目需要一个 `.env` 文件来配置数据库和认证密钥。复制下面这一整段命令粘贴到终端中运行，它会自动生成随机密钥并创建好 `.env` 文件：
+
+```bash
+echo "DATABASE_URL=\"file:./dev.db\"
+NEXTAUTH_SECRET=\"$(openssl rand -base64 32)\"
+NEXTAUTH_URL=\"http://localhost:3000\"" > .env
+```
+
+运行后可以验证文件是否创建成功：
+
+```bash
+cat .env
+```
+
+应该看到类似这样的输出（`NEXTAUTH_SECRET` 的值每次随机生成，不一样是正常的）：
+
+```
+DATABASE_URL="file:./dev.db"
+NEXTAUTH_SECRET="aB3xY7k9mQ2w..."
+NEXTAUTH_URL="http://localhost:3000"
+```
+
+### 5. 安装项目依赖
+
+```bash
+npm install
+```
+
+这会根据 `package.json` 下载所有需要的库到 `node_modules/` 文件夹，通常需要 1-3 分钟。
+
+### 6. 初始化数据库
+
+项目使用 SQLite 作为本地数据库（无需额外安装数据库软件），通过 Prisma 管理：
+
+```bash
+npx prisma migrate deploy
+```
+
+此命令会：
+- 在项目根目录创建 `dev.db` 数据库文件
+- 自动建好所有数据表
+
+然后生成 Prisma 客户端代码：
+
+```bash
+npx prisma generate
+```
+
+### 7. 启动开发服务器
+
+```bash
 npm run dev
 ```
 
-打开 http://localhost:3000 ，注册账号后即可开始测试。用户数据会自动保存在项目根目录的 `LoginRegistration/` 文件夹中。
+看到类似以下输出说明启动成功：
+
+```
+▲ Next.js 16.2.1 (Turbopack)
+- Local:    http://localhost:3000
+✓ Ready in xxxms
+```
+
+### 8. 访问应用
+
+在浏览器中打开 **http://localhost:3000**，注册账号后即可开始 MBTI 动态人格测试。
+
+### 常见问题
+
+**Q: `npm install` 报错或很慢？**
+> 尝试使用国内镜像源：`npm install --registry=https://registry.npmmirror.com`
+
+**Q: 端口 3000 被占用？**
+> 使用其他端口启动：`npm run dev -- --port 3001`，然后访问 `http://localhost:3001`
+
+**Q: 如何停止服务器？**
+> 在运行服务器的终端中按 `Ctrl + C`
+
+**Q: 如何重置数据库？**
+> 删除 `dev.db` 文件后重新运行 `npx prisma migrate deploy`
 
 ## 项目结构
 
