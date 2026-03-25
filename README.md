@@ -1,5 +1,9 @@
 # Enhanced Dynamic MBTI - 动态人格边界建模系统
 
+> **在线体验**: [https://enhanced-dynamic-mbti.vercel.app](https://enhanced-dynamic-mbti.vercel.app)
+>
+> 注册账号即可开始你的 14-21 天动态人格测试，无需本地部署。
+
 通过 14-21 天的连续每日问卷测量，在 N-S、T-F、J-P 三维空间中构建你的"性格边界"模型。
 
 ## 核心理念
@@ -14,20 +18,23 @@
 
 - Next.js 16 (App Router) + TypeScript
 - Tailwind CSS + shadcn/ui
-- Three.js (@react-three/fiber + @react-three/drei)
+- Three.js (@react-three/fiber + @react-three/drei) — 3D 性格空间可视化
 - NextAuth.js (JWT 认证)
 - Recharts (图表)
-- 基于文件的 JSON 数据存储（`LoginRegistration/` 文件夹）
+- Prisma + Turso (libSQL 云数据库)
+- 部署于 Vercel
 
 ## 数据存储
 
-每个用户在 `LoginRegistration/` 文件夹中拥有一个独立的 JSON 文件，包含：
+线上版本使用 [Turso](https://turso.tech) 云数据库（基于 libSQL，兼容 SQLite），通过 Prisma ORM 管理。本地开发时自动回退到 SQLite 文件数据库，无需额外安装数据库软件。
 
-- 用户信息（昵称、邮箱、加密后的密码）
-- 所有测试计划及其状态
-- 每日问卷的完整回答记录
-- 每日的三维坐标评分
-- 性格边界模型数据（凸包、置信椭球、质心、统计分析）
+数据模型包含：
+
+- **User** — 用户信息（昵称、邮箱、加密后的密码）
+- **TestPlan** — 测试计划及其状态
+- **DailySession** — 每日问卷的完整回答记录
+- **DailyScore** — 每日的三维坐标评分
+- **BoundaryModel** — 性格边界模型数据（凸包、置信椭球、质心、统计分析）
 
 ## 快速开始（macOS）
 
@@ -106,6 +113,8 @@ DATABASE_URL="file:./dev.db"
 NEXTAUTH_SECRET="aB3xY7k9mQ2w..."
 NEXTAUTH_URL="http://localhost:3000"
 ```
+
+> 本地开发不需要配置 `TURSO_DATABASE_URL`，系统会自动使用本地 SQLite 文件。
 
 ### 5. 安装项目依赖（重要，不要跳过！）
 
@@ -222,6 +231,8 @@ NEXTAUTH_SECRET="aB3xY7k9mQ2w..."
 NEXTAUTH_URL="http://localhost:3000"
 ```
 
+> 本地开发不需要配置 `TURSO_DATABASE_URL`，系统会自动使用本地 SQLite 文件。
+
 ### 4. 安装项目依赖（重要，不要跳过！）
 
 ```powershell
@@ -283,7 +294,9 @@ npm run dev
 
 ```
 Enhanced Dynamic MBTI/
-├── LoginRegistration/          # 用户数据存储（每个用户一个 JSON 文件）
+├── prisma/
+│   ├── schema.prisma           # 数据模型定义
+│   └── migrations/             # 数据库迁移文件
 ├── src/
 │   ├── app/                    # Next.js 页面
 │   │   ├── page.tsx            # 首页
@@ -311,7 +324,8 @@ Enhanced Dynamic MBTI/
 │   │   └── providers/
 │   │       └── SessionProvider.tsx   # NextAuth Session Provider
 │   ├── lib/
-│   │   ├── userStore.ts        # 文件存储引擎（用户/计划/会话 CRUD）
+│   │   ├── db.ts               # Prisma 数据库连接（Turso / 本地 SQLite）
+│   │   ├── userStore.ts        # 数据层（用户/计划/会话 CRUD）
 │   │   ├── auth.ts             # NextAuth 配置
 │   │   ├── questions.ts        # 题库（86题，覆盖 NS/TF/JP/EI）
 │   │   ├── scoring.ts          # 评分算法（Likert → 三维坐标）
