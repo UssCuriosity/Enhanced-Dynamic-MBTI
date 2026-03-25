@@ -161,6 +161,124 @@ npm run dev
 **Q: 如何重置数据库？**
 > 删除 `dev.db` 文件后重新运行 `npx prisma migrate deploy`
 
+## 快速开始（Windows）
+
+从零开始，在一台全新的 Windows 电脑上把项目跑起来。
+
+### 1. 安装 Node.js
+
+前往 [Node.js 官网](https://nodejs.org/)，下载 **LTS（长期支持）** 版本的安装包（`.msi` 文件）。
+
+运行安装程序，**一路点 Next 使用默认设置即可**，安装程序会自动将 Node.js 添加到系统环境变量。
+
+安装完成后，打开 **PowerShell**（按 `Win + X`，选择「终端」或「Windows PowerShell」），验证安装：
+
+```powershell
+node --version   # 应输出 v18.x 或更高
+npm --version    # 应输出 9.x 或更高
+```
+
+> 如果提示 `node: 无法识别的命令`，关闭 PowerShell 重新打开再试。
+
+### 2. 安装 Git 并下载代码
+
+前往 [Git 官网](https://git-scm.com/downloads/win)，下载安装包并运行，**一路点 Next 使用默认设置即可**。
+
+安装完成后，**关闭并重新打开 PowerShell**，然后克隆项目：
+
+```powershell
+git clone https://github.com/UssCuriosity/Enhanced-Dynamic-MBTI.git
+cd Enhanced-Dynamic-MBTI
+```
+
+> 也可以在 [GitHub 仓库页面](https://github.com/UssCuriosity/Enhanced-Dynamic-MBTI) 点击绿色的 **Code** 按钮，选择 **Download ZIP** 下载压缩包，解压后在 PowerShell 中 `cd` 到项目文件夹即可。
+
+### 3. 创建环境变量文件
+
+复制下面这段命令粘贴到 PowerShell 中运行，它会自动生成随机密钥并创建好 `.env` 文件：
+
+```powershell
+$bytes = [byte[]]::new(32)
+[System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+$secret = [Convert]::ToBase64String($bytes)
+@"
+DATABASE_URL="file:./dev.db"
+NEXTAUTH_SECRET="$secret"
+NEXTAUTH_URL="http://localhost:3000"
+"@ | Set-Content .env -Encoding UTF8
+```
+
+运行后验证文件是否创建成功：
+
+```powershell
+Get-Content .env
+```
+
+应该看到类似这样的输出（`NEXTAUTH_SECRET` 的值每次随机生成，不一样是正常的）：
+
+```
+DATABASE_URL="file:./dev.db"
+NEXTAUTH_SECRET="aB3xY7k9mQ2w..."
+NEXTAUTH_URL="http://localhost:3000"
+```
+
+### 4. 安装项目依赖（重要，不要跳过！）
+
+```powershell
+npm install
+```
+
+这会根据 `package.json` 下载所有需要的库到 `node_modules/` 文件夹，通常需要 1-3 分钟。
+
+> **必须先完成这一步**，后面的数据库初始化和启动服务器都依赖这里安装的库。如果跳过，会出现 `Cannot find module` 或 `command not found` 之类的错误。
+
+### 5. 初始化数据库
+
+项目使用 SQLite 作为本地数据库（无需额外安装数据库软件），通过 Prisma 管理。
+
+依次运行以下两条命令：
+
+```powershell
+npx prisma migrate deploy
+npx prisma generate
+```
+
+第一条命令会在项目根目录创建 `dev.db` 数据库文件并建好所有数据表，第二条命令会生成 Prisma 客户端代码。
+
+### 6. 启动开发服务器
+
+```powershell
+npm run dev
+```
+
+看到类似以下输出说明启动成功：
+
+```
+▲ Next.js 16.2.1 (Turbopack)
+- Local:    http://localhost:3000
+✓ Ready in xxxms
+```
+
+> **注意看 `Local:` 后面的地址**。如果 3000 端口已被其他程序占用，Next.js 会自动换用其他端口（如 3001、3002 等），以终端显示的为准。
+
+### 7. 访问应用
+
+复制终端中 `Local:` 后面显示的地址，粘贴到浏览器中打开，注册账号后即可开始 MBTI 动态人格测试。
+
+### 常见问题
+
+**Q: `npm install` 报错或很慢？**
+> 尝试使用国内镜像源：`npm install --registry=https://registry.npmmirror.com`
+
+**Q: PowerShell 提示"无法加载文件，因为在此系统上禁止运行脚本"？**
+> 以管理员身份打开 PowerShell，运行 `Set-ExecutionPolicy RemoteSigned`，输入 `Y` 确认，然后关闭重新打开 PowerShell 再试。
+
+**Q: 如何停止服务器？**
+> 在运行服务器的终端中按 `Ctrl + C`
+
+**Q: 如何重置数据库？**
+> 删除 `dev.db` 文件后重新运行 `npx prisma migrate deploy`
+
 ## 项目结构
 
 ```
