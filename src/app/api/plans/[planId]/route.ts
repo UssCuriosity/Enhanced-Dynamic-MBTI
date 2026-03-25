@@ -13,7 +13,7 @@ export async function GET(
   }
 
   const { planId } = await params;
-  const owner = findPlanOwner(planId);
+  const owner = await findPlanOwner(planId);
 
   if (!owner) {
     return NextResponse.json({ error: "计划不存在" }, { status: 404 });

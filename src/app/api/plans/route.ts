@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   const { durationDays } = await req.json();
   const userId = (session.user as { id: string }).id;
 
-  const plan = createPlan(userId, durationDays || 14);
+  const plan = await createPlan(userId, durationDays || 14);
   if (!plan) {
     return NextResponse.json({ error: "创建计划失败" }, { status: 500 });
   }
@@ -27,7 +27,7 @@ export async function GET() {
   }
 
   const userId = (session.user as { id: string }).id;
-  const plans = getUserPlans(userId);
+  const plans = await getUserPlans(userId);
 
   return NextResponse.json(plans);
 }

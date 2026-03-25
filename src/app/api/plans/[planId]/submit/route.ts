@@ -31,7 +31,7 @@ export async function POST(
   const { planId } = await params;
   const { answers, contextNote } = await req.json();
 
-  const owner = findPlanOwner(planId);
+  const owner = await findPlanOwner(planId);
   if (!owner) {
     return NextResponse.json({ error: "计划不存在" }, { status: 404 });
   }
@@ -64,10 +64,9 @@ export async function POST(
   };
 
   const isComplete = nextDay >= plan.durationDays;
-  addSession(owner.id, planId, newSession);
+  await addSession(owner.id, planId, newSession);
 
-  // Recompute boundary if enough data
-  const updatedOwner = findPlanOwner(planId);
+  const updatedOwner = await findPlanOwner(planId);
   const updatedPlan = updatedOwner?.plans.find((p) => p.id === planId);
   const allSessions = updatedPlan?.sessions || [];
 
@@ -96,7 +95,7 @@ export async function POST(
       createdAt: new Date().toISOString(),
     };
 
-    updatePlanBoundary(owner.id, planId, boundary);
+    await updatePlanBoundary(owner.id, planId, boundary);
   }
 
   return NextResponse.json({
