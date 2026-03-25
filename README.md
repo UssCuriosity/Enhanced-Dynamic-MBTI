@@ -144,17 +144,16 @@ npm run dev
 ✓ Ready in xxxms
 ```
 
+> **注意看 `Local:` 后面的地址**。如果 3000 端口已被其他程序占用，Next.js 会自动换用其他端口（如 3001、3002 等），终端会显示实际使用的地址，以终端显示的为准。
+
 ### 8. 访问应用
 
-在浏览器中打开 **http://localhost:3000**，注册账号后即可开始 MBTI 动态人格测试。
+复制终端中 `Local:` 后面显示的地址，粘贴到浏览器中打开，注册账号后即可开始 MBTI 动态人格测试。
 
 ### 常见问题
 
 **Q: `npm install` 报错或很慢？**
 > 尝试使用国内镜像源：`npm install --registry=https://registry.npmmirror.com`
-
-**Q: 端口 3000 被占用？**
-> 使用其他端口启动：`npm run dev -- --port 3001`，然后访问 `http://localhost:3001`
 
 **Q: 如何停止服务器？**
 > 在运行服务器的终端中按 `Ctrl + C`
