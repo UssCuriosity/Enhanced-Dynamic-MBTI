@@ -30,6 +30,11 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <SessionProvider>{children}</SessionProvider>
+        <footer className="py-4 text-center">
+          <p className="text-[10px] text-gray-400">
+            Idea originated from Liu Jiawei, Developed by Liu Jiawei &amp; Cursor
+          </p>
+        </footer>
       </body>
     </html>
   );
