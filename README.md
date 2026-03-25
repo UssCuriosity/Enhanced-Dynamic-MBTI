@@ -107,7 +107,7 @@ NEXTAUTH_SECRET="aB3xY7k9mQ2w..."
 NEXTAUTH_URL="http://localhost:3000"
 ```
 
-### 5. 安装项目依赖
+### 5. 安装项目依赖（重要，不要跳过！）
 
 ```bash
 npm install
@@ -115,23 +115,20 @@ npm install
 
 这会根据 `package.json` 下载所有需要的库到 `node_modules/` 文件夹，通常需要 1-3 分钟。
 
+> **必须先完成这一步**，后面的数据库初始化和启动服务器都依赖这里安装的库。如果跳过，会出现 `Cannot find module` 或 `command not found` 之类的错误。
+
 ### 6. 初始化数据库
 
-项目使用 SQLite 作为本地数据库（无需额外安装数据库软件），通过 Prisma 管理：
+项目使用 SQLite 作为本地数据库（无需额外安装数据库软件），通过 Prisma 管理。
+
+依次运行以下两条命令：
 
 ```bash
 npx prisma migrate deploy
-```
-
-此命令会：
-- 在项目根目录创建 `dev.db` 数据库文件
-- 自动建好所有数据表
-
-然后生成 Prisma 客户端代码：
-
-```bash
 npx prisma generate
 ```
+
+第一条命令会在项目根目录创建 `dev.db` 数据库文件并建好所有数据表，第二条命令会生成 Prisma 客户端代码。
 
 ### 7. 启动开发服务器
 
