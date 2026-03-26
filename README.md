@@ -208,8 +208,11 @@ cd Enhanced-Dynamic-MBTI
 
 ```powershell
 $bytes = [byte[]]::new(32)
-[System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+$rng = New-Object System.Security.Cryptography.RNGCryptoServiceProvider
+$rng.GetBytes($bytes)
+
 $secret = [Convert]::ToBase64String($bytes)
+
 @"
 DATABASE_URL="file:./dev.db"
 NEXTAUTH_SECRET="$secret"
@@ -241,7 +244,11 @@ npm install
 
 这会根据 `package.json` 下载所有需要的库到 `node_modules/` 文件夹，通常需要 1-3 分钟。
 
-> **必须先完成这一步**，后面的数据库初始化和启动服务器都依赖这里安装的库。如果跳过，会出现 `Cannot find module` 或 `command not found` 之类的错误。
+> 如果提示"npx : 无法加载文件 ...，因为在此系统上禁止运行脚本。"，说明 PowerShell 的执行策略限制了运行。
+>
+> 先运行以下命令临时修改执行策略，或者转用CMD可以解决。
+>
+> `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process`
 
 ### 5. 初始化数据库
 
@@ -255,6 +262,10 @@ npx prisma generate
 ```
 
 第一条命令会在项目根目录创建 `dev.db` 数据库文件并建好所有数据表，第二条命令会生成 Prisma 客户端代码。
+
+> **必须先完成这一步**，后面的数据库初始化和启动服务器都依赖这里安装的库。如果跳过，会出现 `Cannot find module` 或 `command not found` 之类的错误。
+
+### 
 
 ### 6. 启动开发服务器
 
@@ -281,13 +292,12 @@ npm run dev
 **Q: `npm install` 报错或很慢？**
 > 尝试使用国内镜像源：`npm install --registry=https://registry.npmmirror.com`
 
-**Q: PowerShell 提示"无法加载文件，因为在此系统上禁止运行脚本"？**
-> 以管理员身份打开 PowerShell，运行 `Set-ExecutionPolicy RemoteSigned`，输入 `Y` 确认，然后关闭重新打开 PowerShell 再试。
-
 **Q: 如何停止服务器？**
+
 > 在运行服务器的终端中按 `Ctrl + C`
 
 **Q: 如何重置数据库？**
+
 > 删除 `dev.db` 文件后重新运行 `npx prisma migrate deploy`
 
 ## 项目结构
