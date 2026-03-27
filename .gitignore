@@ -51,3 +51,4 @@ next-env.d.ts
 
 # user data (contains personal info)
 /LoginRegistration/
+package-lock.json
