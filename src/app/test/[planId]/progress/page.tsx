@@ -205,20 +205,20 @@ export default function ProgressPage() {
                   <thead>
                     <tr className="border-b">
                       <th className="py-2 px-3 text-left font-medium">天数</th>
+                      <th className="py-2 px-3 text-right font-medium text-purple-500">E-I</th>
                       <th className="py-2 px-3 text-right font-medium text-red-500">N-S</th>
                       <th className="py-2 px-3 text-right font-medium text-green-500">T-F</th>
                       <th className="py-2 px-3 text-right font-medium text-blue-500">J-P</th>
-                      <th className="py-2 px-3 text-right font-medium text-purple-500">E-I</th>
                     </tr>
                   </thead>
                   <tbody>
                     {points.map((p) => (
                       <tr key={p.day} className="border-b last:border-0">
                         <td className="py-2 px-3">第 {p.day} 天</td>
+                        <td className="py-2 px-3 text-right font-mono">{p.ei.toFixed(3)}</td>
                         <td className="py-2 px-3 text-right font-mono">{p.ns.toFixed(3)}</td>
                         <td className="py-2 px-3 text-right font-mono">{p.tf.toFixed(3)}</td>
                         <td className="py-2 px-3 text-right font-mono">{p.jp.toFixed(3)}</td>
-                        <td className="py-2 px-3 text-right font-mono">{p.ei.toFixed(3)}</td>
                       </tr>
                     ))}
                   </tbody>

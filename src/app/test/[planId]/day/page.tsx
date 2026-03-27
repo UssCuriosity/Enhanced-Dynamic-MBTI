@@ -129,6 +129,8 @@ export default function DailyTestPage() {
   }
 
   if (result) {
+    const mbtiType = `${result.scores.ei >= 0 ? "E" : "I"}${result.scores.ns < 0 ? "N" : "S"}${result.scores.tf < 0 ? "T" : "F"}${result.scores.jp < 0 ? "J" : "P"}`;
+
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="max-w-md w-full text-center space-y-6">
@@ -136,11 +138,14 @@ export default function DailyTestPage() {
           <h2 className="text-2xl font-bold">
             第 {dayNumber} 天完成！
           </h2>
+          <div className="text-3xl font-bold tracking-widest text-primary">
+            {mbtiType}
+          </div>
           <div className="grid grid-cols-2 gap-3 text-sm">
-            <ScoreDisplay label="N-S" value={result.scores.ns} leftLabel="N" rightLabel="S" />
-            <ScoreDisplay label="T-F" value={result.scores.tf} leftLabel="T" rightLabel="F" />
-            <ScoreDisplay label="J-P" value={result.scores.jp} leftLabel="J" rightLabel="P" />
-            <ScoreDisplay label="E-I" value={result.scores.ei} leftLabel="I" rightLabel="E" />
+            <ScoreDisplay label="E-I" value={result.scores.ei} leftLabel="E(+)" rightLabel="I(-)" inverted />
+            <ScoreDisplay label="N-S" value={result.scores.ns} leftLabel="N(-)" rightLabel="S(+)" />
+            <ScoreDisplay label="T-F" value={result.scores.tf} leftLabel="T(-)" rightLabel="F(+)" />
+            <ScoreDisplay label="J-P" value={result.scores.jp} leftLabel="J(-)" rightLabel="P(+)" />
           </div>
           {result.isComplete ? (
             <div className="space-y-3">
@@ -240,13 +245,17 @@ function ScoreDisplay({
   value,
   leftLabel,
   rightLabel,
+  inverted = false,
 }: {
   label: string;
   value: number;
   leftLabel: string;
   rightLabel: string;
+  inverted?: boolean;
 }) {
-  const percentage = ((value + 1) / 2) * 100;
+  const percentage = inverted
+    ? ((-value + 1) / 2) * 100
+    : ((value + 1) / 2) * 100;
   return (
     <div className="p-3 bg-card rounded-lg border space-y-2">
       <div className="text-xs font-medium text-muted-foreground">{label}</div>
