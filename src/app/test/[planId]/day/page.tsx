@@ -6,8 +6,10 @@ import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import QuestionCard from "@/components/questionnaire/QuestionCard";
 import Link from "next/link";
+import { normalizeTestMode, TEST_MODE_LABELS } from "@/lib/testFlow";
 
 interface QuestionItem {
   id: string;
@@ -25,10 +27,14 @@ export default function DailyTestPage() {
   const [questions, setQuestions] = useState<QuestionItem[]>([]);
   const [dayNumber, setDayNumber] = useState(0);
   const [totalDays, setTotalDays] = useState(14);
+  const [testMode, setTestMode] = useState("single");
+  const [modeChanged, setModeChanged] = useState(false);
+  const [sessionType, setSessionType] = useState("single");
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [contextNote, setContextNote] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [modeSaving, setModeSaving] = useState(false);
   const [error, setError] = useState("");
   const [alreadyDone, setAlreadyDone] = useState(false);
   const [result, setResult] = useState<{
@@ -47,7 +53,7 @@ export default function DailyTestPage() {
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) {
-          if (data.alreadyDone) {
+          if (data.alreadyDone || data.error === "测试已完成" || data.error === "今天已经完成了测试") {
             setAlreadyDone(true);
           } else {
             setError(data.error || "获取问题失败");
@@ -56,6 +62,9 @@ export default function DailyTestPage() {
           setQuestions(data.questions);
           setDayNumber(data.dayNumber);
           setTotalDays(data.totalDays);
+          setTestMode(data.testMode || "single");
+          setModeChanged(Boolean(data.modeChanged));
+          setSessionType(data.sessionType || "single");
         }
         setLoading(false);
       })
@@ -72,6 +81,22 @@ export default function DailyTestPage() {
   const answeredCount = Object.keys(answers).length;
   const allAnswered = answeredCount === questions.length;
 
+  const switchMode = async (nextMode: "single" | "dayNight") => {
+    setModeSaving(true);
+    const res = await fetch(`/api/plans/${planId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ testMode: nextMode }),
+    });
+
+    if (res.ok) {
+      window.location.reload();
+    } else {
+      setError("切换模式失败");
+    }
+    setModeSaving(false);
+  };
+
   const handleSubmit = async () => {
     if (!allAnswered) return;
     setSubmitting(true);
@@ -85,7 +110,7 @@ export default function DailyTestPage() {
       const res = await fetch(`/api/plans/${planId}/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers: answerArray, contextNote }),
+        body: JSON.stringify({ answers: answerArray, contextNote, sessionType }),
       });
 
       if (res.ok) {
@@ -138,6 +163,10 @@ export default function DailyTestPage() {
           <h2 className="text-2xl font-bold">
             第 {dayNumber} 天完成！
           </h2>
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            <Badge>{TEST_MODE_LABELS[normalizeTestMode(testMode)]}</Badge>
+            {modeChanged && <Badge variant="destructive">已切换模式</Badge>}
+          </div>
           <div className="text-3xl font-bold tracking-widest text-primary">
             {mbtiType}
           </div>
@@ -159,7 +188,7 @@ export default function DailyTestPage() {
           ) : (
             <div className="space-y-3">
               <p className="text-muted-foreground">
-                还剩 {totalDays - dayNumber} 天，明天继续！
+                {sessionType === "day" ? "白天场次" : sessionType === "night" ? "晚上场次" : "今日测试"} · 还剩 {totalDays - dayNumber} 天，明天继续！
               </p>
               <Link href={`/test/${planId}/progress`}>
                 <Button variant="outline">查看进度</Button>
@@ -180,11 +209,25 @@ export default function DailyTestPage() {
         <div className="max-w-2xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">
-              第 {dayNumber} / {totalDays} 天
+              第 {dayNumber} / {totalDays} 天 · {sessionType === "day" ? "白天" : sessionType === "night" ? "晚上" : "单次"}
             </span>
-            <span className="text-sm text-muted-foreground">
-              已答 {answeredCount} / {questions.length}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                已答 {answeredCount} / {questions.length}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => switchMode(normalizeTestMode(testMode) === "single" ? "dayNight" : "single")}
+                disabled={modeSaving}
+              >
+                切换到 {normalizeTestMode(testMode) === "single" ? "白天+晚上" : "每天一测"}
+              </Button>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <Badge>{TEST_MODE_LABELS[normalizeTestMode(testMode)]}</Badge>
+            {modeChanged && <Badge variant="destructive">切换过模式，不参与排名</Badge>}
           </div>
           <Progress value={(answeredCount / questions.length) * 100} />
         </div>

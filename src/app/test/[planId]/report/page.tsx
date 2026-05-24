@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
@@ -12,6 +12,7 @@ import TimelineChart from "@/components/visualization/TimelineChart";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DailyPoint, EllipsoidParams, Point3D, BoundaryStats } from "@/types";
+import { normalizeTestMode, TEST_MODE_LABELS } from "@/lib/testFlow";
 import {
   generatePersonalityInsight,
   getLabelConfidence,
@@ -34,9 +35,12 @@ interface PlanData {
   id: string;
   durationDays: number;
   currentDay: number;
+  testMode: string;
+  modeChanged: boolean;
   status: string;
   sessions: Array<{
     dayNumber: number;
+    sessionType: string;
     completedAt: string;
     score: {
       nsScore: number;
@@ -62,18 +66,22 @@ export default function ReportPage() {
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchPlan = useCallback(async () => {
-    const res = await fetch(`/api/plans/${planId}`);
-    if (res.ok) {
-      setPlan(await res.json());
-    }
-    setLoading(false);
-  }, [planId]);
-
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/auth/login");
-    else if (status === "authenticated") fetchPlan();
-  }, [status, router, fetchPlan]);
+    if (status === "unauthenticated") {
+      router.push("/auth/login");
+      return;
+    }
+
+    if (status === "authenticated") {
+      void (async () => {
+        const res = await fetch(`/api/plans/${planId}`);
+        if (res.ok) {
+          setPlan(await res.json());
+        }
+        setLoading(false);
+      })();
+    }
+  }, [status, router, planId]);
 
   if (loading || !plan) {
     return (
@@ -93,15 +101,16 @@ export default function ReportPage() {
       day: s.dayNumber,
       date: s.completedAt,
     }));
+  const uniqueDayCount = new Set(points.map((p) => p.date.slice(0, 10))).size;
 
-  if (!plan.boundary || points.length < 3) {
+  if (!plan.boundary || uniqueDayCount < 3) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="max-w-md">
           <CardContent className="py-12 text-center">
             <h3 className="text-lg font-semibold">数据不足</h3>
             <p className="text-muted-foreground mt-2">
-              需要至少 3 天的数据才能生成报告。当前已收集 {points.length} 天。
+              需要至少 3 天的数据才能生成报告。当前已收集 {uniqueDayCount} 天。
             </p>
             <Link href="/dashboard" className="mt-4 inline-block">
               <Button>返回面板</Button>
@@ -132,9 +141,13 @@ export default function ReportPage() {
               <span className="text-muted-foreground">MBTI</span>
             </h1>
           </Link>
-          <Link href="/dashboard">
-            <Button variant="ghost" size="sm">返回面板</Button>
-          </Link>
+          <div className="flex gap-2 flex-wrap justify-end">
+            <Badge>{TEST_MODE_LABELS[normalizeTestMode(plan.testMode)]}</Badge>
+            {plan.modeChanged && <Badge variant="destructive">已切换模式</Badge>}
+            <Link href="/dashboard">
+              <Button variant="ghost" size="sm">返回面板</Button>
+            </Link>
+          </div>
         </div>
       </nav>
 
@@ -143,7 +156,7 @@ export default function ReportPage() {
         <div className="text-center space-y-4">
           <h2 className="text-4xl font-bold">你的性格边界报告</h2>
           <p className="text-muted-foreground">
-            基于 {points.length} 天的连续测量数据
+            基于 {uniqueDayCount} 天的连续测量数据
           </p>
         </div>
 

@@ -14,15 +14,19 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
+import { normalizeTestMode, TEST_MODE_LABELS } from "@/lib/testFlow";
 
 interface Plan {
   id: string;
   durationDays: number;
   currentDay: number;
+  testMode: string;
+  modeChanged: boolean;
   status: string;
   startDate: string;
   sessions: Array<{
     dayNumber: number;
+    sessionType: string;
     completedAt: string;
     score: {
       nsScore: number;
@@ -39,6 +43,8 @@ export default function DashboardPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [selectedMode, setSelectedMode] = useState<"single" | "dayNight">("single");
+  const [modeSaving, setModeSaving] = useState<string | null>(null);
 
   const fetchPlans = useCallback(async () => {
     const res = await fetch("/api/plans");
@@ -52,17 +58,27 @@ export default function DashboardPage() {
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/auth/login");
-    } else if (status === "authenticated") {
-      fetchPlans();
+      return;
     }
-  }, [status, router, fetchPlans]);
+
+    if (status === "authenticated") {
+      void (async () => {
+        const res = await fetch("/api/plans");
+        if (res.ok) {
+          const data = await res.json();
+          setPlans(data);
+        }
+        setLoading(false);
+      })();
+    }
+  }, [status, router]);
 
   const createPlan = async (days: number) => {
     setCreating(true);
     const res = await fetch("/api/plans", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ durationDays: days }),
+      body: JSON.stringify({ durationDays: days, testMode: selectedMode }),
     });
 
     if (res.ok) {
@@ -70,6 +86,20 @@ export default function DashboardPage() {
       router.push(`/test/${plan.id}/day`);
     }
     setCreating(false);
+  };
+
+  const updateMode = async (planId: string, nextMode: "single" | "dayNight") => {
+    setModeSaving(planId);
+    const res = await fetch(`/api/plans/${planId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ testMode: nextMode }),
+    });
+
+    if (res.ok) {
+      await fetchPlans();
+    }
+    setModeSaving(null);
   };
 
   if (status === "loading" || loading) {
@@ -115,15 +145,20 @@ export default function DashboardPage() {
         {activePlan ? (
           <Card className="border-primary/20 bg-primary/5">
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <div>
                   <CardTitle>进行中的测试</CardTitle>
                   <CardDescription>
-                    {activePlan.durationDays} 天计划 · 开始于{" "}
-                    {new Date(activePlan.startDate).toLocaleDateString("zh-CN")}
+                    {activePlan.durationDays} 天计划 · {TEST_MODE_LABELS[normalizeTestMode(activePlan.testMode)]}
                   </CardDescription>
                 </div>
-                <Badge>进行中</Badge>
+                <div className="flex gap-2 flex-wrap justify-end">
+                  <Badge>{TEST_MODE_LABELS[normalizeTestMode(activePlan.testMode)]}</Badge>
+                  {activePlan.modeChanged && (
+                    <Badge variant="destructive">已切换模式，暂不参与排名</Badge>
+                  )}
+                  <Badge>进行中</Badge>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -145,7 +180,7 @@ export default function DashboardPage() {
                   }
                 />
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
                 <Link href={`/test/${activePlan.id}/day`}>
                   <Button>今日测试</Button>
                 </Link>
@@ -155,6 +190,27 @@ export default function DashboardPage() {
                   </Link>
                 )}
               </div>
+              <div className="rounded-xl border bg-background/70 p-4 space-y-3">
+                <div className="text-sm font-medium">切换测试模式</div>
+                <div className="flex gap-2 flex-wrap">
+                  <Button
+                    variant={normalizeTestMode(activePlan.testMode) === "single" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => updateMode(activePlan.id, "single")}
+                    disabled={modeSaving === activePlan.id}
+                  >
+                    每天一测
+                  </Button>
+                  <Button
+                    variant={normalizeTestMode(activePlan.testMode) === "dayNight" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => updateMode(activePlan.id, "dayNight")}
+                    disabled={modeSaving === activePlan.id}
+                  >
+                    白天 + 晚上
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         ) : (
@@ -162,10 +218,26 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle>开始新的测试计划</CardTitle>
               <CardDescription>
-                选择测试周期，每天花 3-5 分钟完成问卷，构建你的性格边界模型
+                先选测试模式，再选择测试周期。你也可以后续随时切换，但切换后不会进入排行榜。
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant={selectedMode === "single" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedMode("single")}
+                >
+                  每天一测
+                </Button>
+                <Button
+                  variant={selectedMode === "dayNight" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedMode("dayNight")}
+                >
+                  白天 + 晚上
+                </Button>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
                   onClick={() => createPlan(14)}
@@ -174,7 +246,7 @@ export default function DashboardPage() {
                 >
                   <div className="text-2xl font-bold">14 天</div>
                   <div className="text-sm text-muted-foreground mt-1">
-                    快速了解你的性格范围，适合初次体验
+                    {TEST_MODE_LABELS[selectedMode]} · 适合快速体验
                   </div>
                 </button>
                 <button
@@ -184,7 +256,7 @@ export default function DashboardPage() {
                 >
                   <div className="text-2xl font-bold">21 天</div>
                   <div className="text-sm text-muted-foreground mt-1">
-                    更精确的性格边界建模，数据更丰富
+                    {TEST_MODE_LABELS[selectedMode]} · 更完整的边界记录
                   </div>
                 </button>
               </div>
@@ -198,26 +270,35 @@ export default function DashboardPage() {
             {completedPlans.map((plan) => (
               <Card key={plan.id}>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-3">
                     <div>
                       <CardTitle className="text-base">
                         {plan.durationDays} 天测试计划
                       </CardTitle>
                       <CardDescription>
                         {new Date(plan.startDate).toLocaleDateString("zh-CN")} ·
-                        已完成 {plan.currentDay} 天
+                        {TEST_MODE_LABELS[normalizeTestMode(plan.testMode)]}
                       </CardDescription>
                     </div>
-                    <Badge variant="secondary">已完成</Badge>
+                    <div className="flex gap-2 flex-wrap justify-end">
+                      {plan.modeChanged && (
+                        <Badge variant="destructive">切换过模式</Badge>
+                      )}
+                      <Badge variant="secondary">已完成</Badge>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 flex-wrap">
                     <Link href={`/test/${plan.id}/report`}>
-                      <Button variant="outline" size="sm">查看报告</Button>
+                      <Button variant="outline" size="sm">
+                        查看报告
+                      </Button>
                     </Link>
                     <Link href={`/test/${plan.id}/progress`}>
-                      <Button variant="ghost" size="sm">查看数据</Button>
+                      <Button variant="ghost" size="sm">
+                        查看数据
+                      </Button>
                     </Link>
                   </div>
                 </CardContent>

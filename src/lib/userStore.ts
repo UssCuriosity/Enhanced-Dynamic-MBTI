@@ -1,4 +1,5 @@
 import { prisma } from "./db";
+import { normalizeSessionType, normalizeTestMode } from "./testFlow";
 
 export interface StoredAnswer {
   questionId: string;
@@ -16,6 +17,7 @@ export interface StoredScore {
 export interface StoredSession {
   id: string;
   dayNumber: number;
+  sessionType: string;
   completedAt: string;
   contextNote: string | null;
   answers: StoredAnswer[];
@@ -34,6 +36,8 @@ export interface StoredPlan {
   id: string;
   durationDays: number;
   currentDay: number;
+  testMode: string;
+  modeChanged: boolean;
   status: string;
   startDate: string;
   createdAt: string;
@@ -51,7 +55,10 @@ export interface UserData {
 }
 
 const planInclude = {
-  sessions: { include: { answers: true, score: true }, orderBy: { dayNumber: "asc" as const } },
+  sessions: {
+    include: { answers: true, score: true },
+    orderBy: [{ dayNumber: "asc" as const }, { completedAt: "asc" as const }],
+  },
   boundary: true,
 };
 
@@ -65,12 +72,15 @@ function toPlan(p: any): StoredPlan {
     id: p.id,
     durationDays: p.durationDays,
     currentDay: p.currentDay,
+    testMode: p.testMode ?? "single",
+    modeChanged: Boolean(p.modeChanged),
     status: p.status,
     startDate: p.startDate instanceof Date ? p.startDate.toISOString() : p.startDate,
     createdAt: p.createdAt instanceof Date ? p.createdAt.toISOString() : p.createdAt,
     sessions: (p.sessions ?? []).map((s: any) => ({  // eslint-disable-line @typescript-eslint/no-explicit-any
       id: s.id,
       dayNumber: s.dayNumber,
+      sessionType: s.sessionType ?? "single",
       completedAt: s.completedAt instanceof Date ? s.completedAt.toISOString() : s.completedAt,
       contextNote: s.contextNote,
       answers: (s.answers ?? []).map((a: any) => ({  // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -148,13 +158,14 @@ export async function createUser(
 
 export async function createPlan(
   userId: string,
-  durationDays: number
+  durationDays: number,
+  testMode: string
 ): Promise<StoredPlan | null> {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) return null;
 
   const p = await prisma.testPlan.create({
-    data: { userId, durationDays },
+    data: { userId, durationDays, testMode: normalizeTestMode(testMode) },
     include: planInclude,
   });
   return toPlan(p);
@@ -207,6 +218,8 @@ export async function addSession(
   if (!plan) return;
 
   const isComplete = session.dayNumber >= plan.durationDays;
+  const normalizedSessionType = normalizeSessionType(session.sessionType);
+  const isDayComplete = normalizedSessionType === "single" || normalizedSessionType === "night";
 
   await prisma.$transaction([
     prisma.dailySession.create({
@@ -214,6 +227,7 @@ export async function addSession(
         id: session.id,
         planId,
         dayNumber: session.dayNumber,
+        sessionType: normalizedSessionType,
         completedAt: new Date(session.completedAt),
         contextNote: session.contextNote,
         answers: {
@@ -241,10 +255,43 @@ export async function addSession(
       where: { id: planId },
       data: {
         currentDay: session.dayNumber,
-        ...(isComplete ? { status: "completed" } : {}),
+        ...(isComplete && isDayComplete ? { status: "completed" } : {}),
       },
     }),
   ]);
+}
+
+export async function updatePlanMode(
+  userId: string,
+  planId: string,
+  testMode: string
+): Promise<StoredPlan | null> {
+  const plan = await prisma.testPlan.findFirst({
+    where: { id: planId, userId },
+  });
+  if (!plan) return null;
+
+  const normalizedMode = normalizeTestMode(testMode);
+  const modeChanged = plan.testMode !== normalizedMode ? true : plan.modeChanged;
+
+  const updated = await prisma.testPlan.update({
+    where: { id: planId },
+    data: {
+      testMode: normalizedMode,
+      modeChanged,
+    },
+    include: planInclude,
+  });
+
+  return toPlan(updated);
+}
+
+export async function getAllUsersWithPlans(): Promise<UserData[]> {
+  const users = await prisma.user.findMany({
+    include: userInclude,
+    orderBy: { createdAt: "asc" },
+  });
+  return users.map(toUserData);
 }
 
 export async function updatePlanBoundary(

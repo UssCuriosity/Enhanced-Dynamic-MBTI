@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import dynamic from "next/dynamic";
@@ -12,6 +12,7 @@ import ProjectionView from "@/components/visualization/ProjectionView";
 import TimelineChart from "@/components/visualization/TimelineChart";
 import Link from "next/link";
 import { DailyPoint, EllipsoidParams, Point3D } from "@/types";
+import { normalizeTestMode, TEST_MODE_LABELS } from "@/lib/testFlow";
 
 const PersonalitySpace = dynamic(
   () => import("@/components/visualization/PersonalitySpace"),
@@ -22,9 +23,12 @@ interface PlanData {
   id: string;
   durationDays: number;
   currentDay: number;
+  testMode: string;
+  modeChanged: boolean;
   status: string;
   sessions: Array<{
     dayNumber: number;
+    sessionType: string;
     completedAt: string;
     score: {
       nsScore: number;
@@ -50,18 +54,22 @@ export default function ProgressPage() {
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchPlan = useCallback(async () => {
-    const res = await fetch(`/api/plans/${planId}`);
-    if (res.ok) {
-      setPlan(await res.json());
-    }
-    setLoading(false);
-  }, [planId]);
-
   useEffect(() => {
-    if (status === "unauthenticated") router.push("/auth/login");
-    else if (status === "authenticated") fetchPlan();
-  }, [status, router, fetchPlan]);
+    if (status === "unauthenticated") {
+      router.push("/auth/login");
+      return;
+    }
+
+    if (status === "authenticated") {
+      void (async () => {
+        const res = await fetch(`/api/plans/${planId}`);
+        if (res.ok) {
+          setPlan(await res.json());
+        }
+        setLoading(false);
+      })();
+    }
+  }, [status, router, planId]);
 
   if (loading || !plan) {
     return (
@@ -81,6 +89,7 @@ export default function ProgressPage() {
       day: s.dayNumber,
       date: s.completedAt,
     }));
+  const uniqueDayCount = new Set(points.map((p) => p.date.slice(0, 10))).size;
 
   const boundary = plan.boundary;
   const convexHull = boundary ? JSON.parse(boundary.convexHullVertices) : undefined;
@@ -121,12 +130,16 @@ export default function ProgressPage() {
           <div>
             <h2 className="text-3xl font-bold">测试进度</h2>
             <p className="text-muted-foreground mt-1">
-              已收集 {points.length} 天的数据
+              已收集 {uniqueDayCount} 天的数据
             </p>
           </div>
-          <Badge variant={plan.status === "active" ? "default" : "secondary"}>
-            {plan.status === "active" ? "进行中" : "已完成"}
-          </Badge>
+          <div className="flex gap-2 flex-wrap justify-end">
+            <Badge>{TEST_MODE_LABELS[normalizeTestMode(plan.testMode)]}</Badge>
+            {plan.modeChanged && <Badge variant="destructive">已切换模式</Badge>}
+            <Badge variant={plan.status === "active" ? "default" : "secondary"}>
+              {plan.status === "active" ? "进行中" : "已完成"}
+            </Badge>
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -137,7 +150,7 @@ export default function ProgressPage() {
           <Progress value={(plan.currentDay / plan.durationDays) * 100} />
         </div>
 
-        {points.length >= 3 ? (
+        {uniqueDayCount >= 3 ? (
           <>
             <Card>
               <CardHeader>
@@ -188,7 +201,7 @@ export default function ProgressPage() {
               <div className="text-4xl mb-4">&#128202;</div>
               <h3 className="text-lg font-semibold">数据积累中</h3>
               <p className="text-muted-foreground mt-2">
-                还需要 {3 - points.length} 天的数据才能生成可视化图表。坚持每天完成测试！
+                还需要 {3 - uniqueDayCount} 天的数据才能生成可视化图表。坚持每天完成测试！
               </p>
             </CardContent>
           </Card>

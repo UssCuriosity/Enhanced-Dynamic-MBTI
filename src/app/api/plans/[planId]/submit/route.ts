@@ -16,6 +16,7 @@ import {
   computeConvexHull,
   computeBoundaryStats,
 } from "@/lib/boundary";
+import { resolveNextTestSlot } from "@/lib/testFlow";
 import { DailyPoint } from "@/types";
 import { v4 as uuidv4 } from "uuid";
 
@@ -37,17 +38,20 @@ export async function POST(
   }
 
   const plan = owner.plans.find((p) => p.id === planId)!;
-  const nextDay = plan.sessions.length + 1;
-  if (nextDay > plan.durationDays) {
+  const slot = resolveNextTestSlot(plan);
+  if (slot.dayNumber > plan.durationDays && !slot.isCurrentDayOpen) {
     return NextResponse.json({ error: "测试已完成" }, { status: 400 });
   }
 
   const scores = calculateScores(answers);
   const questionMap = new Map(questionBank.map((q) => [q.id, q]));
+  const isDayCompletingSession =
+    slot.sessionType === "single" || slot.sessionType === "night";
 
   const newSession: StoredSession = {
     id: uuidv4(),
-    dayNumber: nextDay,
+    dayNumber: slot.dayNumber,
+    sessionType: slot.sessionType,
     completedAt: new Date().toISOString(),
     contextNote: contextNote || null,
     answers: answers.map((a: { questionId: string; value: number }) => ({
@@ -63,14 +67,18 @@ export async function POST(
     },
   };
 
-  const isComplete = nextDay >= plan.durationDays;
   await addSession(owner.id, planId, newSession);
 
   const updatedOwner = await findPlanOwner(planId);
   const updatedPlan = updatedOwner?.plans.find((p) => p.id === planId);
   const allSessions = updatedPlan?.sessions || [];
+  const uniqueDayCount = new Set(
+    allSessions
+      .filter((s) => s.score)
+      .map((s) => s.completedAt.slice(0, 10))
+  ).size;
 
-  if (allSessions.length >= 3) {
+  if (uniqueDayCount >= 3) {
     const points: DailyPoint[] = allSessions
       .filter((s) => s.score)
       .map((s) => ({
@@ -101,7 +109,11 @@ export async function POST(
   return NextResponse.json({
     session: newSession,
     scores,
-    isComplete,
-    dayNumber: nextDay,
+    isComplete:
+      isDayCompletingSession &&
+      slot.dayNumber >= plan.durationDays &&
+      updatedPlan?.status === "completed",
+    dayNumber: slot.dayNumber,
+    sessionType: slot.sessionType,
   });
 }

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { findPlanOwner } from "@/lib/userStore";
 import { selectDailyQuestions } from "@/lib/questions";
+import { resolveNextTestSlot } from "@/lib/testFlow";
 
 export async function GET(
   _req: Request,
@@ -20,29 +21,20 @@ export async function GET(
   }
 
   const plan = owner.plans.find((p) => p.id === planId)!;
-  const nextDay = plan.sessions.length + 1;
+  const slot = resolveNextTestSlot(plan);
 
-  if (nextDay > plan.durationDays) {
+  if (slot.dayNumber > plan.durationDays && !slot.isCurrentDayOpen) {
     return NextResponse.json({ error: "测试已完成" }, { status: 400 });
   }
 
-  const todaySession = plan.sessions.find((s) => {
-    const today = new Date().toISOString().split("T")[0];
-    return s.completedAt.split("T")[0] === today;
-  });
-
-  if (todaySession) {
-    return NextResponse.json(
-      { error: "今天已经完成了测试", alreadyDone: true },
-      { status: 400 }
-    );
-  }
-
-  const questions = selectDailyQuestions(nextDay);
+  const questions = selectDailyQuestions(slot.dayNumber, 15, slot.sessionType);
 
   return NextResponse.json({
-    dayNumber: nextDay,
+    dayNumber: slot.dayNumber,
     totalDays: plan.durationDays,
+    sessionType: slot.sessionType,
+    testMode: plan.testMode,
+    modeChanged: plan.modeChanged,
     questions: questions.map((q) => ({
       id: q.id,
       text: q.text,

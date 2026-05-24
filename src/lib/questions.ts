@@ -206,8 +206,13 @@ export const questionBank: Question[] = [
  * - Randomly samples remaining questions from the general pool, balanced across dimensions
  * - Returns ~15 questions total with high variety across 21 days
  */
-export function selectDailyQuestions(dayNumber: number, totalQuestions = 15): Question[] {
-  const rng = seededRandom(dayNumber * 7919);
+export function selectDailyQuestions(
+  dayNumber: number,
+  totalQuestions = 15,
+  sessionType: "single" | "day" | "night" = "single"
+): Question[] {
+  const typeSeed = sessionType === "night" ? 1 : sessionType === "day" ? 2 : 0;
+  const rng = seededRandom(dayNumber * 7919 + typeSeed * 104729);
   const dimensions = ["NS", "TF", "JP", "EI"] as const;
 
   const dailyState: Question[] = [];

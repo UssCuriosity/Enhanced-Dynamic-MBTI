@@ -21,6 +21,8 @@ model TestPlan {
   userId       String
   durationDays Int            @default(14)
   currentDay   Int            @default(0)
+  testMode     String         @default("single") // single | dayNight
+  modeChanged  Boolean        @default(false)
   status       String         @default("active") // active | completed | paused
   startDate    DateTime       @default(now())
   createdAt    DateTime       @default(now())
@@ -35,13 +37,14 @@ model DailySession {
   id          String      @id @default(cuid())
   planId      String
   dayNumber   Int
+  sessionType String      @default("single") // single | day | night
   completedAt DateTime    @default(now())
   contextNote String?
   plan        TestPlan    @relation(fields: [planId], references: [id], onDelete: Cascade)
   answers     Answer[]
   score       DailyScore?
 
-  @@unique([planId, dayNumber])
+  @@unique([planId, dayNumber, sessionType])
   @@index([planId])
 }
 

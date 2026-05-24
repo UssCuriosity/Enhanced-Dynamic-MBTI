@@ -158,7 +158,10 @@ export function computeConvexHull(points: DailyPoint[]): number[][] {
   const n = pts.length;
 
   // Find initial tetrahedron
-  let [a, b, c, d] = [0, 1, 2, 3];
+  const a = 0;
+  let b = 1;
+  let c = 2;
+  let d = 3;
 
   // Ensure non-degenerate: find 4 non-coplanar points
   for (let i = 1; i < n; i++) {

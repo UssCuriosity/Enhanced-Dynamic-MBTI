@@ -1,111 +1,250 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { GitBranch } from "lucide-react";
+import type { LeaderboardBoard } from "@/types";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function HomePage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const [boards, setBoards] = useState<LeaderboardBoard[]>([]);
 
-  if (session) {
-    router.push("/dashboard");
-    return null;
-  }
+  useEffect(() => {
+    if (session) {
+      router.replace("/dashboard");
+      return;
+    }
+
+    fetch("/api/leaderboard")
+      .then((res) => res.json())
+      .then((data) => setBoards(data.boards || []))
+      .catch(() => setBoards([]));
+  }, [session, router]);
+
+  const singleBoard = boards.find((board) => board.mode === "single");
+  const dualBoard = boards.find((board) => board.mode === "dayNight");
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-blue-950 dark:to-indigo-950">
-      <nav className="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-900/80">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold tracking-tight">
-            <span className="text-primary">Enhanced Dynamic</span>{" "}
-            <span className="text-muted-foreground">MBTI</span>
-          </h1>
+    <div className="relative min-h-screen overflow-hidden bg-[#020617] text-slate-50">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(250,204,21,0.14),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(56,189,248,0.2),_transparent_26%),radial-gradient(circle_at_bottom,_rgba(99,102,241,0.12),_transparent_34%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.03),transparent_18%,transparent_82%,rgba(255,255,255,0.02))]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/50 to-transparent" />
+
+      <nav className="relative border-b border-white/10 bg-slate-950/55 backdrop-blur-2xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
+          <div className="space-y-1">
+            <div className="text-[11px] uppercase tracking-[0.46em] text-amber-200/80">Enhanced Dynamic MBTI</div>
+            <h1 className="text-lg font-semibold tracking-tight text-slate-50 sm:text-xl">动态人格边界建模</h1>
+          </div>
           <div className="flex gap-2">
             <Link href="/auth/login">
-              <Button variant="ghost" size="sm">登录</Button>
+              <Button variant="ghost" size="sm" className="text-slate-100 hover:bg-white/10 hover:text-white">
+                登录
+              </Button>
             </Link>
             <Link href="/auth/register">
-              <Button size="sm">注册</Button>
+              <Button size="sm" className="bg-amber-300 text-slate-950 hover:bg-amber-200">
+                注册
+              </Button>
             </Link>
           </div>
         </div>
       </nav>
 
-      <main className="max-w-6xl mx-auto px-4 py-20">
-        <div className="text-center space-y-8">
-          <div className="space-y-4">
-            <h2 className="text-5xl sm:text-6xl font-bold tracking-tight">
-              你的性格，<br />
-              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                不止四个字母
-              </span>
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              传统 MBTI 给你一个静态标签。Enhanced Dynamic MBTI 通过 14-21 天的动态测量，
-              在三维空间中描绘你真实的性格边界 —— 因为你每天都不一样。
-            </p>
-          </div>
+      <main className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:py-14">
+        <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:gap-8">
+          <div className="space-y-6">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="border-amber-300/30 bg-amber-300/10 px-3 py-1 text-amber-100">
+                随机试玩
+              </Badge>
+              <Badge variant="outline" className="border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-cyan-100">
+                单测
+              </Badge>
+              <Badge variant="outline" className="border-violet-300/30 bg-violet-300/10 px-3 py-1 text-violet-100">
+                白天 + 晚上
+              </Badge>
+            </div>
 
-          <div className="flex gap-4 justify-center">
-            <Link href="/auth/register">
-              <Button size="lg" className="text-lg px-8">
-                开始探索
-              </Button>
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16">
-            <FeatureCard
-              title="每日 3–5 分钟"
-              description="每天回答 15 道精心设计的问题，系统会捕捉你当天的性格状态。简单、快速、不打扰你的生活。"
-              icon={
-                <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              }
-            />
-            <FeatureCard
-              title="三维性格空间"
-              description="用 N-S、T-F、J-P 三个维度构建三维坐标系，每天的测量结果是空间中的一个点，形成你独特的性格点云。"
-              icon={
-                <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
-                </svg>
-              }
-            />
-            <FeatureCard
-              title="动态边界模型"
-              description="通过凸包和置信椭球算法，计算你的性格边界。了解你性格的稳定区域、波动范围和变化趋势。"
-              icon={
-                <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5" />
-                </svg>
-              }
-            />
-          </div>
-
-          <div className="mt-12 p-8 bg-white/60 dark:bg-slate-800/60 rounded-2xl border max-w-3xl mx-auto text-center">
-            <h3 className="text-2xl font-bold mb-4">为什么需要动态测量？</h3>
-            <div className="text-muted-foreground space-y-3">
-              <p>
-                你今天可能因为一场激烈的讨论而更偏向 T（思考型），明天可能因为和朋友的深入交流而更偏向 F（情感型）。
-                你的性格不是一个固定的点，而是一个在三维空间中的<strong className="text-foreground">活动范围</strong>。
+            <div className="space-y-5">
+              <h2 className="max-w-3xl text-5xl font-semibold leading-[0.94] tracking-tight sm:text-7xl">
+                你的性格，
+                <span className="block bg-gradient-to-r from-amber-200 via-cyan-300 to-violet-300 bg-clip-text text-transparent">
+                  不是标签，是一张会呼吸的空间图。
+                </span>
+              </h2>
+              <p className="max-w-2xl text-base leading-8 text-slate-300 sm:text-lg">
+                先用右下角的随机测试看 3D 边界，再进入正式流程。支持每天一测或白天+晚上双测，切换模式后也能继续，但切换过的计划不会进入排行榜。
               </p>
-              <p>
-                Enhanced Dynamic MBTI 通过持续的测量，找到这个范围的边界，告诉你：
-              </p>
-              <ul className="space-y-1 inline-block text-left">
-                <li>· 你性格的「重心」在哪里</li>
-                <li>· 你的波动范围有多大</li>
-                <li>· 哪些维度稳定，哪些维度灵活</li>
-                <li>· 你的性格是否有变化趋势</li>
-              </ul>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Link href="/auth/register">
+                <Button size="lg" className="bg-amber-300 px-6 text-slate-950 hover:bg-amber-200">
+                  开始正式测试
+                </Button>
+              </Link>
+              <Link href="/playground/random">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="border-white/15 bg-white/5 px-6 text-slate-50 hover:bg-white/10 hover:text-white"
+                >
+                  先看随机 3D
+                </Button>
+              </Link>
+            </div>
+
+            <div>
+              <Link href="/versions">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-full border border-white/10 bg-white/5 px-4 text-slate-100 hover:bg-white/10 hover:text-white"
+                >
+                  <GitBranch className="mr-2 h-4 w-4 text-cyan-300" />
+                  版本时间线
+                </Button>
+              </Link>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <MiniStat title="双模式边界" value="18:00 分界" />
+              <MiniStat title="隐私展示" value="邮箱脱敏" />
+              <MiniStat title="排行榜规则" value="两榜分开" />
             </div>
           </div>
-        </div>
+
+          <Card className="border-white/10 bg-slate-950/70 shadow-2xl shadow-cyan-950/30 backdrop-blur-xl">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-xl text-slate-50">榜单概览</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <OverviewCard
+                title="每天一测榜"
+                board={singleBoard}
+                accent="from-cyan-300 via-sky-400 to-blue-500"
+              />
+              <OverviewCard
+                title="白天 + 晚上榜"
+                board={dualBoard}
+                accent="from-violet-300 via-fuchsia-400 to-indigo-500"
+              />
+            </CardContent>
+          </Card>
+        </section>
+
+        <section className="mt-10 grid gap-4 md:grid-cols-3">
+          <FeatureCard
+            title="更强的 3D 质感"
+            description="深色背景、发光边界和更明确的色块分工，让随机试玩更像一张可互动的视觉卡片。"
+          />
+          <FeatureCard
+            title="模式可切换"
+            description="正式计划中可以随时在单测和日夜双测之间切换，但切换后不会参与榜单排名。"
+          />
+          <FeatureCard
+            title="规则清晰"
+            description="白天和晚上的分界固定为 18:00，用户一眼就能知道当前应该走哪条测试路径。"
+          />
+        </section>
+
+        <section className="mt-10 grid gap-6 xl:grid-cols-2">
+          <Card className="border-white/10 bg-white/5 shadow-2xl shadow-cyan-950/20 backdrop-blur-xl">
+            <CardHeader>
+              <CardTitle className="text-2xl text-slate-50">为什么它不是普通 MBTI？</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm leading-7 text-slate-300">
+              <p>传统 MBTI 把你压缩成一个点，我们把它展开成一个会移动的空间。</p>
+              <p>你每天的答案会形成新的坐标，久而久之，这些点会长成一块真正属于你的边界。</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-white/10 bg-white/5 shadow-2xl shadow-cyan-950/20 backdrop-blur-xl">
+            <CardHeader>
+              <CardTitle className="text-2xl text-slate-50">隐私保护</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm leading-7 text-slate-300">
+              <p>排行榜只显示邮箱前 4 个字母和 @ 后面的域名，中间会被隐藏。</p>
+              <p>切换过测试模式的计划会被自动剔除，不会混入两张榜单。</p>
+            </CardContent>
+          </Card>
+        </section>
       </main>
+
+      <Link
+        href="/playground/random"
+        className="fixed bottom-5 right-5 z-50"
+        aria-label="随机测试"
+      >
+        <div className="flex items-center gap-3 rounded-full border border-amber-300/25 bg-slate-950/90 px-4 py-3 text-sm font-medium text-slate-50 shadow-2xl shadow-amber-500/15 backdrop-blur transition hover:scale-[1.03] hover:border-amber-200/40">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-300 text-xs font-bold text-slate-950">
+            测
+          </span>
+          <span>随机测试</span>
+        </div>
+      </Link>
+    </div>
+  );
+}
+
+function MiniStat({ title, value }: { title: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 backdrop-blur">
+      <div className="text-[11px] uppercase tracking-[0.26em] text-slate-400">{title}</div>
+      <div className="mt-2 text-sm font-semibold text-slate-50">{value}</div>
+    </div>
+  );
+}
+
+function OverviewCard({
+  title,
+  board,
+  accent,
+}: {
+  title: string;
+  board?: LeaderboardBoard;
+  accent: string;
+}) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-slate-950/50 p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-xs uppercase tracking-[0.2em] text-slate-400">榜单</div>
+          <div className="text-base font-semibold text-slate-50">{title}</div>
+        </div>
+        <div className={`h-2.5 w-16 rounded-full bg-gradient-to-r ${accent}`} />
+      </div>
+      <div className="mt-4 space-y-2">
+        {board?.entries?.length ? (
+          board.entries.slice(0, 3).map((entry) => (
+            <div
+              key={`${board.mode}-${entry.planId}`}
+              className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/5 px-3 py-3 text-sm"
+            >
+              <div>
+                <div className="font-medium text-slate-50">{entry.displayEmail}</div>
+                <div className="text-xs text-slate-400">
+                  {entry.activeDays} 天 · 连胜 {entry.streakDays}
+                </div>
+              </div>
+              <Badge variant="secondary" className="bg-white/10 text-slate-100">
+                #{entry.rank}
+              </Badge>
+            </div>
+          ))
+        ) : (
+          <div className="rounded-2xl border border-dashed border-white/10 px-3 py-8 text-center text-sm text-slate-400">
+            暂无可展示数据
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -113,17 +252,18 @@ export default function HomePage() {
 function FeatureCard({
   title,
   description,
-  icon,
 }: {
   title: string;
   description: string;
-  icon: React.ReactNode;
 }) {
   return (
-    <div className="p-6 bg-white/60 dark:bg-slate-800/60 rounded-xl border flex flex-col items-center text-center gap-3 h-full">
-      <div className="text-primary shrink-0">{icon}</div>
-      <h3 className="text-lg font-semibold shrink-0">{title}</h3>
-      <p className="text-muted-foreground text-sm leading-relaxed flex-1">{description}</p>
-    </div>
+    <Card className="border-white/10 bg-white/5 shadow-lg shadow-cyan-950/20 backdrop-blur-xl">
+      <CardHeader>
+        <CardTitle className="text-lg text-slate-50">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm leading-7 text-slate-300">{description}</p>
+      </CardContent>
+    </Card>
   );
 }

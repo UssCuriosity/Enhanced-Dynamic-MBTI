@@ -1,4 +1,6 @@
 export type Dimension = "NS" | "TF" | "JP" | "EI";
+export type TestMode = "single" | "dayNight";
+export type SessionType = "single" | "day" | "night";
 
 export interface Question {
   id: string;
@@ -63,4 +65,21 @@ export interface SessionResult {
   tf: number;
   jp: number;
   ei: number;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  displayEmail: string;
+  name: string;
+  mode: TestMode;
+  activeDays: number;
+  streakDays: number;
+  completionRate: number;
+  planId: string;
+}
+
+export interface LeaderboardBoard {
+  mode: TestMode;
+  title: string;
+  entries: LeaderboardEntry[];
 }
