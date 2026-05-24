@@ -60,7 +60,7 @@ export default function PersonalitySpace({
         <color attach="background" args={["#020617"]} />
         <fog attach="fog" args={["#020617", 5.5, 15]} />
         <ambientLight intensity={0.72} />
-        <hemisphereLight skyColor="#bae6fd" groundColor="#0f172a" intensity={0.9} />
+        <hemisphereLight color="#bae6fd" groundColor="#0f172a" intensity={0.9} />
         <directionalLight position={[4, 6, 5]} intensity={0.95} color="#f8fafc" />
         <pointLight position={[-4, -2, 5]} intensity={0.5} color="#22d3ee" />
         <pointLight position={[4, 2, -4]} intensity={0.4} color="#a78bfa" />
