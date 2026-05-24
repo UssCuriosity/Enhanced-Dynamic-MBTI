@@ -48,39 +48,45 @@ function summarizeCommit(title: string): string {
 }
 
 function readGitCommits(limit = 20): RawCommit[] {
-  const output = execSync(
-    `git log --numstat --date=short --pretty=format:%H%x09%ad%x09%s -n ${limit}`,
-    { encoding: "utf8" }
-  );
+  try {
+    const output = execSync(
+      `git log --numstat --date=short --pretty=format:%H%x09%ad%x09%s -n ${limit}`,
+      { encoding: "utf8" }
+    );
 
-  const commits: RawCommit[] = [];
-  const lines = output.split("\n");
-  let current: RawCommit | null = null;
+    const commits: RawCommit[] = [];
+    const lines = output.split("\n");
+    let current: RawCommit | null = null;
 
-  for (const line of lines) {
-    if (!line.trim()) continue;
-    const parts = line.split("\t");
-    if (parts.length === 3 && /^[0-9a-f]{7,40}$/i.test(parts[0])) {
-      if (current) commits.push(current);
-      current = {
-        hash: parts[0],
-        date: parts[1],
-        title: parts[2],
-        additions: 0,
-        deletions: 0,
-      };
-      continue;
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const parts = line.split("\t");
+      if (parts.length === 3 && /^[0-9a-f]{7,40}$/i.test(parts[0])) {
+        if (current) commits.push(current);
+        current = {
+          hash: parts[0],
+          date: parts[1],
+          title: parts[2],
+          additions: 0,
+          deletions: 0,
+        };
+        continue;
+      }
+
+      if (!current || parts.length < 3) continue;
+      const added = Number.parseInt(parts[0], 10);
+      const deleted = Number.parseInt(parts[1], 10);
+      if (!Number.isNaN(added)) current.additions += added;
+      if (!Number.isNaN(deleted)) current.deletions += deleted;
     }
 
-    if (!current || parts.length < 3) continue;
-    const added = Number.parseInt(parts[0], 10);
-    const deleted = Number.parseInt(parts[1], 10);
-    if (!Number.isNaN(added)) current.additions += added;
-    if (!Number.isNaN(deleted)) current.deletions += deleted;
+    if (current) commits.push(current);
+    return commits;
+  } catch (error) {
+    // Git not available in build environment (e.g., Vercel)
+    // Return empty array to allow build to proceed
+    return [];
   }
-
-  if (current) commits.push(current);
-  return commits;
 }
 
 export function getVersionTimeline(): VersionEntry[] {
