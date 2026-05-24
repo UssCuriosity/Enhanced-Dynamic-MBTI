@@ -1,5 +1,3 @@
-import { execSync } from "node:child_process";
-
 export interface VersionEntry {
   version: string;
   commit: string;
@@ -10,20 +8,6 @@ export interface VersionEntry {
   deletions: number;
   totalChanges: number;
   summary: string;
-}
-
-interface RawCommit {
-  hash: string;
-  date: string;
-  title: string;
-  additions: number;
-  deletions: number;
-}
-
-function classifyScope(totalChanges: number, additions: number, deletions: number): VersionEntry["scope"] {
-  if (totalChanges >= 1200 || additions >= 900 || deletions >= 400) return "major";
-  if (totalChanges >= 120 || additions >= 60 || deletions >= 40) return "minor";
-  return "patch";
 }
 
 function summarizeCommit(title: string): string {
@@ -44,67 +28,164 @@ function summarizeCommit(title: string): string {
   if (lowered.includes("fix") || lowered.includes("turso")) {
     return "修复连接或运行问题，保证项目可用性。";
   }
+  if (lowered.includes("deployment")) {
+    return "部署相关更新，聚焦构建和发布流程。";
+  }
   return "功能和体验均有调整。";
 }
 
-function readGitCommits(limit = 20): RawCommit[] {
-  try {
-    const output = execSync(
-      `git log --numstat --date=short --pretty=format:%H%x09%ad%x09%s -n ${limit}`,
-      { encoding: "utf8" }
-    );
-
-    const commits: RawCommit[] = [];
-    const lines = output.split("\n");
-    let current: RawCommit | null = null;
-
-    for (const line of lines) {
-      if (!line.trim()) continue;
-      const parts = line.split("\t");
-      if (parts.length === 3 && /^[0-9a-f]{7,40}$/i.test(parts[0])) {
-        if (current) commits.push(current);
-        current = {
-          hash: parts[0],
-          date: parts[1],
-          title: parts[2],
-          additions: 0,
-          deletions: 0,
-        };
-        continue;
-      }
-
-      if (!current || parts.length < 3) continue;
-      const added = Number.parseInt(parts[0], 10);
-      const deleted = Number.parseInt(parts[1], 10);
-      if (!Number.isNaN(added)) current.additions += added;
-      if (!Number.isNaN(deleted)) current.deletions += deleted;
-    }
-
-    if (current) commits.push(current);
-    return commits;
-  } catch (error) {
-    // Git not available in build environment (e.g., Vercel)
-    // Return empty array to allow build to proceed
-    return [];
-  }
-}
+const RAW_COMMITS: Array<Pick<VersionEntry, "commit" | "date" | "title" | "additions" | "deletions" | "scope">> = [
+  {
+    commit: "731c167",
+    date: "2026-05-24",
+    title: "Fix: handle git command failure in Vercel build environment",
+    additions: 34,
+    deletions: 28,
+    scope: "patch",
+  },
+  {
+    commit: "eeb8e3b",
+    date: "2026-05-24",
+    title: "Add Vercel deployment documentation and script",
+    additions: 82,
+    deletions: 0,
+    scope: "minor",
+  },
+  {
+    commit: "7df4067",
+    date: "2026-05-24",
+    title: "docs: remove edgeone deployment guide",
+    additions: 0,
+    deletions: 32,
+    scope: "patch",
+  },
+  {
+    commit: "e83886a",
+    date: "2026-05-24",
+    title: "docs: prepare edgeone deployment",
+    additions: 32,
+    deletions: 0,
+    scope: "patch",
+  },
+  {
+    commit: "588102a",
+    date: "2026-05-24",
+    title: "feat: preserve data and refresh ui",
+    additions: 1373,
+    deletions: 244,
+    scope: "major",
+  },
+  {
+    commit: "d716741",
+    date: "2026-03-27",
+    title: "UI improvements: dimension labels, MBTI type display, and layout alignment",
+    additions: 32,
+    deletions: 23,
+    scope: "minor",
+  },
+  {
+    commit: "4e8f145",
+    date: "2026-03-25",
+    title: "Update README with live site link and current tech stack",
+    additions: 24,
+    deletions: 10,
+    scope: "patch",
+  },
+  {
+    commit: "4fe0b0b",
+    date: "2026-03-25",
+    title: "Add footer credit line to all pages",
+    additions: 5,
+    deletions: 0,
+    scope: "patch",
+  },
+  {
+    commit: "7242047",
+    date: "2026-03-25",
+    title: "Fix Turso connection: use createClient for proper URL handling",
+    additions: 9,
+    deletions: 7,
+    scope: "patch",
+  },
+  {
+    commit: "2551f81",
+    date: "2026-03-25",
+    title: "Migrate from file-based storage to Prisma + Turso for cloud deployment",
+    additions: 186,
+    deletions: 84,
+    scope: "major",
+  },
+  {
+    commit: "77b49ff",
+    date: "2026-03-25",
+    title: "feat: expand question bank to 166 items and optimize daily selection",
+    additions: 149,
+    deletions: 26,
+    scope: "minor",
+  },
+  {
+    commit: "98e6f16",
+    date: "2026-03-25",
+    title: "docs: add Windows quick start guide",
+    additions: 118,
+    deletions: 0,
+    scope: "minor",
+  },
+  {
+    commit: "8f8f57a",
+    date: "2026-03-25",
+    title: "docs: clarify that users should use the actual address shown in terminal",
+    additions: 3,
+    deletions: 4,
+    scope: "patch",
+  },
+  {
+    commit: "d85ccb6",
+    date: "2026-03-25",
+    title: "fix: add missing dotenv dependency and clarify README install step",
+    additions: 8,
+    deletions: 11,
+    scope: "patch",
+  },
+  {
+    commit: "aaebbf8",
+    date: "2026-03-25",
+    title: "docs: add detailed macOS setup guide for new users",
+    additions: 128,
+    deletions: 4,
+    scope: "minor",
+  },
+  {
+    commit: "0e5a502",
+    date: "2026-03-25",
+    title: "feat: implement Enhanced Dynamic MBTI full-stack application",
+    additions: 1410,
+    deletions: 528,
+    scope: "major",
+  },
+  {
+    commit: "6e20bb4",
+    date: "2026-03-25",
+    title: "feat: initial commit",
+    additions: 0,
+    deletions: 0,
+    scope: "major",
+  },
+];
 
 export function getVersionTimeline(): VersionEntry[] {
-  const commits = readGitCommits(12).reverse();
-
   let major = 0;
   let minor = 0;
   let patch = 0;
 
-  return commits.map((commit) => {
+  return RAW_COMMITS.map((commit) => {
     const totalChanges = commit.additions + commit.deletions;
-    const scope = classifyScope(totalChanges, commit.additions, commit.deletions);
 
-    if (scope === "major") {
+    if (commit.scope === "major") {
       major += 1;
       minor = 0;
       patch = 0;
-    } else if (scope === "minor") {
+    } else if (commit.scope === "minor") {
       minor += 1;
       patch = 0;
     } else {
@@ -113,10 +194,10 @@ export function getVersionTimeline(): VersionEntry[] {
 
     return {
       version: `${major}.${minor}.${patch}`,
-      commit: commit.hash.slice(0, 7),
+      commit: commit.commit,
       date: commit.date,
       title: commit.title,
-      scope,
+      scope: commit.scope,
       additions: commit.additions,
       deletions: commit.deletions,
       totalChanges,

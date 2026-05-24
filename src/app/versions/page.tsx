@@ -16,7 +16,7 @@ export default function VersionsPage() {
             <div className="text-xs uppercase tracking-[0.38em] text-cyan-300/80">Project Changelog</div>
             <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">版本更新时间线</h1>
             <p className="max-w-2xl text-sm leading-7 text-slate-300">
-              这个页面会从 `git log` 里自动提取 commit，按改动规模分配版本号，并把项目演进整理成一条可读的 timeline。
+              这个页面整理了项目的重要 commit，按改动规模分配版本号，并把项目演进整理成一条可读的 timeline。
             </p>
           </div>
           <Link href="/">
